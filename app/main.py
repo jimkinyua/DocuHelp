@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from app.ingestion import extract_text, chunk_text
@@ -22,10 +22,15 @@ class ChatRequest(BaseModel):
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
     file_bytes = await file.read()
-    text = extract_text(file.filename, file_bytes)
-    chunks = chunk_text(text)
-    count = add_chunks(doc_id=file.filename, chunks=chunks)
-    return {"filename": file.filename, "chunks_stored": count}
+    try:
+        text = extract_text(file.filename, file_bytes)
+        chunks = chunk_text(text)
+        count = add_chunks(doc_id=file.filename, chunks=chunks)
+        return {"filename": file.filename, "chunks_stored": count}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
 
 
 @app.post("/query")

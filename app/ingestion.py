@@ -29,10 +29,22 @@ def chunk_text(text: str, chunk_size: int = 300, overlap: int = 50) -> list[str]
         start += chunk_size - overlap
     return chunks
     
+from pypdf.errors import FileNotDecryptedError
+
 def _read_pdf(file_bytes: bytes) -> str:
-    reader = PdfReader(io.BytesIO(file_bytes))
-    pages = [page.extract_text() or "" for page in reader.pages]
-    return "\n".join(pages)
+    try:
+        reader = PdfReader(io.BytesIO(file_bytes))
+        if reader.is_encrypted:
+            try:
+                reader.decrypt("")
+            except Exception:
+                pass
+        pages = [page.extract_text() or "" for page in reader.pages]
+        return "\n".join(pages)
+    except FileNotDecryptedError:
+        raise ValueError("The uploaded PDF is encrypted/password-protected and cannot be read.")
+    except Exception as e:
+        raise ValueError(f"Failed to read PDF: {str(e)}")
 
 
 def _read_docx(file_bytes: bytes) -> str:

@@ -16,6 +16,7 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     source: str
     messages: list[Message]
+    provider: str = "groq"
 
 
 @app.post("/upload")
@@ -30,7 +31,7 @@ async def upload(file: UploadFile = File(...)):
 @app.post("/query")
 def query(req: ChatRequest):
     messages = [{"role": m.role, "content": m.content} for m in req.messages]
-    return generate_answer(messages, source=req.source)
+    return generate_answer(messages, source=req.source, provider=req.provider)
 
 
 @app.get("/")

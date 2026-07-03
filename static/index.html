@@ -547,6 +547,12 @@
                 <div class="thread" id="thread"></div>
 
                 <div class="composer-wrap">
+                    <div style="margin: 0 auto 12px auto; max-width: 800px; display: flex; justify-content: flex-end;">
+                        <select id="providerSelect" style="padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); font-family: inherit; font-size: 0.85rem; color: var(--ink); outline: none; cursor: pointer; box-shadow: var(--shadow-sm);">
+                            <option value="groq">Groq</option>
+                            <option value="google">Google</option>
+                        </select>
+                    </div>
                     <div class="composer">
                         <input type="text" id="questionInput" placeholder="Ask a question about this document..." onkeydown="if(event.key==='Enter') ask()">
                         <button class="primary" id="askBtn" onclick="ask()">Ask</button>
@@ -691,11 +697,13 @@
             const thinking = addMessage('assistant', 'Thinking...');
             thinking.classList.add('thinking');
 
+            const provider = document.getElementById('providerSelect').value;
+
             try {
                 const res = await fetch('/query', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ source: currentSource, messages })
+                    body: JSON.stringify({ source: currentSource, messages, provider })
                 });
                 if (!res.ok) throw new Error('Query failed');
                 const data = await res.json();

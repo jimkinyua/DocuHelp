@@ -2,14 +2,14 @@ import os
 import openai
 from openai import OpenAI
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from app.vectorstore import search_chunks
 
 load_dotenv()
 
 google_key = os.environ.get("GOOGLE_API_KEY")
-if google_key:
-    genai.configure(api_key=google_key)
+google_client = genai.Client(api_key=google_key) if google_key else None
 
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
@@ -48,14 +48,19 @@ def generate_answer(messages: list[dict], source: str = None, top_k: int = 4, pr
 
     try:
         if provider == "google":
-            gemini_messages = []
-            for msg in llm_messages:
-                role = "user" if msg["role"] == "user" else "model"
-                gemini_messages.append({"role": role, "parts": [msg["content"]]})
-            
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(gemini_messages)
-            answer = response.text
+            if not google_client:
+                answer = "Google API key is not configured on this server."
+            else:
+                gemini_messages = []
+                for msg in llm_messages:
+                    role = "user" if msg["role"] == "user" else "model"
+                    gemini_messages.append({"role": role, "parts": [{"text": msg["content"]}]})
+                
+                response = google_client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=gemini_messages
+                )
+                answer = response.text
         else:
             completion = client.chat.completions.create(
                 model=MODEL,
